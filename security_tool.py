@@ -1,199 +1,77 @@
-#!/usr/bin/env python3
-
-import argparse
+import hashlib
+import time
+import os
 import socket
-import requests
-import dns.resolver
-import whois
-import ssl
-import json
-from datetime import datetime
 
-# ---------------------------
-# 1. DNS Lookup
-# ---------------------------
-def dns_lookup(target):
+# ==============================
+# 🔷 TOOL INFO
+# ==============================
+
+AUTHOR = "Benahmed Mohamed"
+TOOL_NAME = "SentinelRecon"
+VERSION = "1.0"
+
+SIGNATURE = "SentinelRecon | Cyber Intelligence Tool"
+
+SECRET_SALT = "9x!QpL@7#Secure"
+INVISIBLE_MARK = "\u200b\u200c\u200d"
+
+# ==============================
+# 🔐 FINGERPRINT
+# ==============================
+
+def generate_fingerprint():
+    raw = f"{AUTHOR}{TOOL_NAME}{VERSION}{time.time()}{SECRET_SALT}"
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+# ==============================
+# 🕵️ TRACKING (LOCAL)
+# ==============================
+
+def track_usage(domain):
     try:
-        result = dns.resolver.resolve(target, 'A')
-        return [ip.to_text() for ip in result]
+        with open(".sentinel_log", "a") as f:
+            f.write(f"{domain} | {time.ctime()}\n")
     except:
-        return []
+        pass
 
-# ---------------------------
-# 2. IP Resolve
-# ---------------------------
-def get_ip(target):
+# ==============================
+# 🌐 BASIC RECON
+# ==============================
+
+def resolve_domain(domain):
     try:
-        return socket.gethostbyname(target)
+        ip = socket.gethostbyname(domain)
+        return ip
     except:
-        return None
+        return "Failed"
 
-# ---------------------------
-# 3. WHOIS
-# ---------------------------
-def get_whois(target):
-    try:
-        data = whois.whois(target)
-        return str(data.creation_date)
-    except:
-        return "Unknown"
+# ==============================
+# 🚀 MAIN SCAN
+# ==============================
 
-# ---------------------------
-# 4. HTTP Headers
-# ---------------------------
-def get_headers(target):
-    try:
-        r = requests.get(f"http://{target}", timeout=5)
-        return dict(r.headers)
-    except:
-        return {}
+def sentinel_scan(domain):
+    print("="*50)
+    print(f"{SIGNATURE}")
+    print(f"{INVISIBLE_MARK}{AUTHOR}{INVISIBLE_MARK}")
+    print("="*50)
 
-# ---------------------------
-# 5. HTTPS Check
-# ---------------------------
-def https_check(target):
-    try:
-        r = requests.get(f"https://{target}", timeout=5)
-        return r.status_code
-    except:
-        return "No HTTPS"
+    fp = generate_fingerprint()
+    print(f"[ID] {fp[:16]}")
+    print(f"[Target] {domain}")
 
-# ---------------------------
-# 6. SSL Info
-# ---------------------------
-def ssl_info(target):
-    try:
-        ctx = ssl.create_default_context()
-        with ctx.wrap_socket(socket.socket(), server_hostname=target) as s:
-            s.connect((target, 443))
-            cert = s.getpeercert()
-            return cert['issuer']
-    except:
-        return "No SSL"
+    ip = resolve_domain(domain)
+    print(f"[IP] {ip}")
 
-# ---------------------------
-# 7. Open Ports (basic)
-# ---------------------------
-def scan_ports(target):
-    open_ports = []
-    for port in [21, 22, 80, 443, 8080]:
-        try:
-            s = socket.socket()
-            s.settimeout(1)
-            s.connect((target, port))
-            open_ports.append(port)
-            s.close()
-        except:
-            pass
-    return open_ports
+    track_usage(domain)
 
-# ---------------------------
-# 8. Server Info
-# ---------------------------
-def server_info(headers):
-    return headers.get("Server", "Unknown")
+    print("="*50)
+    print("Scan Complete ✅")
 
-# ---------------------------
-# 9. Content Length
-# ---------------------------
-def content_length(target):
-    try:
-        r = requests.get(f"http://{target}", timeout=5)
-        return len(r.text)
-    except:
-        return 0
-
-# ---------------------------
-# 10. Redirect Check
-# ---------------------------
-def check_redirect(target):
-    try:
-        r = requests.get(f"http://{target}", allow_redirects=False)
-        return r.status_code in [301, 302]
-    except:
-        return False
-
-# ---------------------------
-# 11. Cookies
-# ---------------------------
-def get_cookies(target):
-    try:
-        r = requests.get(f"http://{target}")
-        return r.cookies.get_dict()
-    except:
-        return {}
-
-# ---------------------------
-# 12. Robots.txt
-# ---------------------------
-def robots_txt(target):
-    try:
-        r = requests.get(f"http://{target}/robots.txt")
-        return r.text[:200]
-    except:
-        return "Not Found"
-
-# ---------------------------
-# 13. Sitemap
-# ---------------------------
-def sitemap(target):
-    try:
-        r = requests.get(f"http://{target}/sitemap.xml")
-        return r.status_code
-    except:
-        return "Not Found"
-
-# ---------------------------
-# 14. Basic Security Headers
-# ---------------------------
-def security_headers(headers):
-    sec = [
-        "X-Frame-Options",
-        "Content-Security-Policy",
-        "Strict-Transport-Security"
-    ]
-    return {h: headers.get(h, "Missing") for h in sec}
-
-# ---------------------------
-# 15. Simple Tech Detection
-# ---------------------------
-def tech_detect(headers):
-    return headers.get("X-Powered-By", "Unknown")
-
-# ---------------------------
-# MAIN
-# ---------------------------
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--target", required=True, help="Target domain")
-    args = parser.parse_args()
-
-    target = args.target
-
-    print(f"\n[+] Scanning: {target}\n")
-
-    headers = get_headers(target)
-
-    results = {
-        "IP": get_ip(target),
-        "DNS": dns_lookup(target),
-        "WHOIS": get_whois(target),
-        "Headers": headers,
-        "HTTPS": https_check(target),
-        "SSL": ssl_info(target),
-        "Open Ports": scan_ports(target),
-        "Server": server_info(headers),
-        "Content Length": content_length(target),
-        "Redirect": check_redirect(target),
-        "Cookies": get_cookies(target),
-        "Robots.txt": robots_txt(target),
-        "Sitemap": sitemap(target),
-        "Security Headers": security_headers(headers),
-        "Technology": tech_detect(headers)
-    }
-
-    print(json.dumps(results, indent=4))
-
+# ==============================
+# ▶️ RUN
+# ==============================
 
 if __name__ == "__main__":
-    main()
+    target = input("Enter domain: ")
+    sentinel_scan(target)
