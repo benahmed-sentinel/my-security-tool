@@ -1,25 +1,30 @@
 # 🔥 SentinelRecon
 
-A powerful Python-based reconnaissance tool for cybersecurity professionals.
+A powerful Python-based reconnaissance and security scanning tool.
 
 ---
 
-## 🚀 Features
+## ⚡ Features
 
 - 🔍 WHOIS Lookup
 - 🌐 DNS Enumeration
-- 🛣️ Traceroute
-- 🔒 Port Scanning
-- 🧠 Service Detection
+- 📡 Traceroute
+- 🔓 Port Scanning
+- 🛠 Service Detection
 - 🌍 Web Server Detection
-- 📡 UDP Scan
+- 📶 UDP Scan
 - ⚠️ Vulnerability Scan (Nmap Scripts)
 
 ---
 
-## ⚙️ Installation
+## 🧰 Requirements
+
+- Python 3.x
+- Linux (recommended)
+
+---
+
+## 🚀 Usage
 
 ```bash
-git clone https://github.com/benahmed-sentinel/my-security-tool.git
-cd my-security-tool
-python3 security_tool_v2.py
+python security_tool.py
