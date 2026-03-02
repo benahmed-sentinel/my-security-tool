@@ -1,3 +1,4 @@
+
 # 🔥 SentinelRecon
 
 A powerful Python-based reconnaissance and security scanning tool.
@@ -31,6 +32,3 @@ Run the tool using:
 ```bash
 python security_tool.py example.com
 ```
-
-```bash
-python security_tool.py example.com
